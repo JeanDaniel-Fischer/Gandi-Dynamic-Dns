@@ -137,3 +137,8 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# Implementation specific
+api_key
+zone
+record
