@@ -3,5 +3,5 @@
 while :
 do
     python3 main.py
-    sleep 10;
+    sleep 1800;
 done
