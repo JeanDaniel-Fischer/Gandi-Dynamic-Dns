@@ -1,3 +1,6 @@
+#Usage
+Use this script for update a managed domain name by Gandi with your current external ip address.
+
 #Use outside docker container
 This script is made to update a gandi domain zone record with your current external ip from where the script is executed.
 
@@ -11,4 +14,5 @@ For exemple to have the dns name alpha.betha.com to reference your ip, you need 
 
 #Use docker container 
 Just define API_KEY, RECORD and ZONE environment variable as described earlier. Docker container is configured to executed update every 1800 seconds (12 hours).
+Available on docker hub at https://hub.docker.com/r/jdfischer/gandi-dynamic-dns/.
  
