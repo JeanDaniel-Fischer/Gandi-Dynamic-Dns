@@ -1,5 +1,5 @@
 #Usage
-Use this script for update a managed domain name by Gandi with your current external ip address.
+Use this script for update a managed domain name by Gandi with your current external ip address. The zone must be created first using Gandi website.
 
 #Use outside docker container
 This script is made to update a gandi domain zone record with your current external ip from where the script is executed.

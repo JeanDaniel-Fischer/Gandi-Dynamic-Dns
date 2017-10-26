@@ -72,12 +72,12 @@ class ZoneUpdater(object):
         for zone in list_zone:
             if zone['name'] == zone_name:
                 self._current_zone = zone
-        if not self._current_zone:
-            raise ApiGandiException('Failed to find zone %s' % (zone_name))
+        if (not hasattr(self, '_current_zone')) or (not self._current_zone):
+            raise GandiApiException('Failed to find zone %s, did you create it first in Gandi interface.' % (zone_name))
         
         self._new_zone_version_number = self._api.domain.zone.version.new(self._api_key, self._current_zone['id'])
-        if not self._new_zone_version_number:
-            raise ApiGandiException('Failed to get new zone version number for zone %s' % (zone_name))
+        if (not hasattr(self, '_new_zone_version_number')) or (not self._new_zone_version_number):
+            raise GandiApiException('Failed to get new zone version number for zone %s.' % (zone_name))
         logging.info('Find zone %s' % (zone_name))
 
     def _update_record(self, record_name, ip):
@@ -85,8 +85,8 @@ class ZoneUpdater(object):
         Update a given record (the short name for exemple a.b.c in zone b.c. as record_name equal to a)
         to a specific ip.
         """
-        if (not self._current_zone) or (not self._new_zone_version_number):
-            raise ApiGandiException("Can't update record, no cloned zone available")
+        if ((not hasattr(self, '_current_zone')) or (not self._current_zone)) or ((not hasattr(self, '_new_zone_version_number')) or (not self._new_zone_version_number)):
+            raise GandiApiException("Can't update record, no cloned zone available.")
         
         list_record =  self._api.domain.zone.record.list(self._api_key, self._current_zone['id'], 
             self._new_zone_version_number)
@@ -102,17 +102,17 @@ class ZoneUpdater(object):
             'value': ip,
             'ttl': myrecord['ttl']
             })
-        logging.info('Update record %s with ip %s successfully' % (record_name, ip))
+        logging.info('Update record %s with ip %s successfully.' % (record_name, ip))
 
     def _activate_new_zone(self):
         """
         Set new zone has the active one.
         """
-        if (not self._current_zone) or (not self._new_zone_version_number):
-            raise ApiGandiException("Can't update record, no cloned zone available")
+        if ((not hasattr(self, '_current_zone')) or (not self._current_zone)) or ((not hasattr(self, '_new_zone_version_number')) or (not self._new_zone_version_number)):
+            raise GandiApiException("Can't update record, no cloned zone available.")
         success = self._api.domain.zone.version.set(self._api_key, self._current_zone['id'], 
             self._new_zone_version_number)
         if not success:
-            raise ApiGandiException('Failed to activate new zone')
+            raise GandiApiException('Failed to activate new zone;')
         else:
-            logging.info('New zone version activated')
+            logging.info('New zone version activated.')
