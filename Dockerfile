@@ -1,4 +1,6 @@
-FROM python:3.5
+FROM python:3.8
+
+RUN python3 -m pip install requests
 
 RUN mkdir -p /opt/gandi-dynamic-dns
 ADD python/*.py /opt/gandi-dynamic-dns/

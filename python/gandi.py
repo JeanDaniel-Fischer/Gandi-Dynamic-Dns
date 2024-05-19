@@ -21,7 +21,7 @@
 # 
 
 import logging
-from xmlrpc.client import ServerProxy
+import requests
 
 class GandiApiException(Exception):
     """
@@ -49,7 +49,6 @@ class ZoneUpdater(object):
         """
         self._api_key = api_key
         self._api_url = api_url
-        self._api = ServerProxy(api_url)
 
     def update_zone(self, zone_name, record_name, new_ip):
         """
@@ -58,61 +57,23 @@ class ZoneUpdater(object):
         new_ip: new ip of dns entry
         """
         logging.info('Start update zone %s, record %s' % (zone_name, record_name))
-        self._clone_zone(zone_name)
-        self._update_record(record_name, new_ip)
-        self._activate_new_zone()
+        zone_name = zone_name[0:len(zone_name) - 1] if zone_name[len(zone_name) - 1] == '.' else zone_name
+        self._update_record(zone_name, record_name, new_ip)
         logging.info('End update zone %s, record %s' % (zone_name, record_name))
 
-    def _clone_zone(self, zone_name):
-        """
-        Use API to access the current zone and prepare the next one.
-        Set self._current_zone and self._new_zone_version_number.
-        """
-        list_zone = self._api.domain.zone.list(self._api_key)
-        for zone in list_zone:
-            if zone['name'] == zone_name:
-                self._current_zone = zone
-        if (not hasattr(self, '_current_zone')) or (not self._current_zone):
-            raise GandiApiException('Failed to find zone %s, did you create it first in Gandi interface.' % (zone_name))
-        
-        self._new_zone_version_number = self._api.domain.zone.version.new(self._api_key, self._current_zone['id'])
-        if (not hasattr(self, '_new_zone_version_number')) or (not self._new_zone_version_number):
-            raise GandiApiException('Failed to get new zone version number for zone %s.' % (zone_name))
-        logging.info('Find zone %s' % (zone_name))
-
-    def _update_record(self, record_name, ip):
+    def _update_record(self, zone_name, record_name, ip):
         """
         Update a given record (the short name for exemple a.b.c in zone b.c. as record_name equal to a)
         to a specific ip.
         """
-        if ((not hasattr(self, '_current_zone')) or (not self._current_zone)) or ((not hasattr(self, '_new_zone_version_number')) or (not self._new_zone_version_number)):
-            raise GandiApiException("Can't update record, no cloned zone available.")
         
-        list_record =  self._api.domain.zone.record.list(self._api_key, self._current_zone['id'], 
-            self._new_zone_version_number)
-        for record in list_record:
-            if record['name'] == record_name:
-                myrecord = record
-        # Create new record
-        self._api.domain.zone.record.update(self._api_key, self._current_zone['id'], 
-            self._new_zone_version_number, {'id': myrecord['id']}, 
-            {
-            'name': myrecord['name'],
-            'type': myrecord['type'],
-            'value': ip,
-            'ttl': myrecord['ttl']
-            })
+        r = requests.put('%slivedns/domains/%s/records/%s/A' % (self._api_url, zone_name, record_name),
+                         json={'rrset_values': [ip], 'rrset_ttl': 300},
+                         headers= {'Authorization': 'Bearer %s' % self._api_key})
+        
+        print(r.url)
+        print(r.headers)
+        if r.status_code >= 400:
+            raise GandiApiException('Failed to update record %s' % (r.text))
+        
         logging.info('Update record %s with ip %s successfully.' % (record_name, ip))
-
-    def _activate_new_zone(self):
-        """
-        Set new zone has the active one.
-        """
-        if ((not hasattr(self, '_current_zone')) or (not self._current_zone)) or ((not hasattr(self, '_new_zone_version_number')) or (not self._new_zone_version_number)):
-            raise GandiApiException("Can't update record, no cloned zone available.")
-        success = self._api.domain.zone.version.set(self._api_key, self._current_zone['id'], 
-            self._new_zone_version_number)
-        if not success:
-            raise GandiApiException('Failed to activate new zone;')
-        else:
-            logging.info('New zone version activated.')
